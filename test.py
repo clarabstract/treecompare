@@ -88,6 +88,25 @@ failed to produce the expected differences:
             ["a", "g", "c"],
             ["a", "b", "c"]
         )
+
+    def test_lists_not_equal_strings(self):
+        
+        self.assertDifferent({
+                '': "expected 'xyz', got ('x', 'y', 'z')"
+            },
+            options= 'ignore_case',
+            expected= "xyz",
+            actual= ('x', 'y', 'z')
+        )
+
+        self.assertDifferent({
+                '': "expected ('x', 'y', 'z'), got 'xyz'"
+            },
+            options= 'ignore_case',
+            expected= ('x', 'y', 'z'),
+            actual= "xyz"
+        )
+
     def test_unequal_lists_longer_expected(self):
         
         self.assertDifferent({
