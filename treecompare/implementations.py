@@ -76,6 +76,8 @@ class DiffNumbers(DiffPrimitives):
 class DiffText(DiffPrimitives):
     diffs_types = basestring
     def diff(self, expected, actual):
+        if not isinstance(expected, basestring):
+            return self.different("expected %r, got %r" % (expected, actual))
         expected_comparable, actual_comparable = expected, actual
         if 'ignore_case' in self.options:
             expected_comparable, actual_comparable = expected.lower(), actual.lower()
@@ -83,21 +85,38 @@ class DiffText(DiffPrimitives):
             return self.different("expected %r, got %r" % (expected, actual))
     
 class DiffLists(ImplementationBase):
-    diffs_types = list
+    diffs_types = (list, tuple)
 
     def diff(self, expected, actual):
         diffs = []
+        if not isinstance(actual, type(expected)):
+            return self.different("expected %r, got %r" % (expected, actual))
         for i, obj in enumerate(expected):
             with self.diffing_child("[%s]" % i) as child:
-                if len(actual) < (i+1):
-                    diffs += self.different("expected %r, got nothing" % obj)
-                else:
-                    if 'assert_includes' in child.options:
-                        if not any([not child.continue_diff(possible, actual[i]) for possible in obj]):
-                            diffs += child.different("%r not included in %r" %(actual[i], obj))
-
+                if 'ignore_key' in child.options:
+                    for possible in actual:
+                        new_diffs = child.continue_diff(obj, possible)
+                        if not new_diffs:
+                            break
                     else:
-                        diffs += child.continue_diff(obj, actual[i])
+                        diffs += child.different("%r not found anywhere in in %r" % (obj, actual))
+                        
+
+
+                    #if not any([not  ]):
+                    #    diffs += child.different("%r not found anywhere in in %r" % (obj, actual))
+                    # if not any([not child.continue_diff(possible, actual[i]) for possible in actual]):
+                    #     diffs += child.different("%r not found anywhere in in %r" % (obj, actual))
+                else:
+                    if len(actual) < (i+1):
+                        diffs += child.different("expected %r, got nothing" % obj)
+                    else:
+                        if 'assert_includes' in child.options:
+                            if not any([not child.continue_diff(possible, actual[i]) for possible in obj]):
+                                diffs += child.different("%r not included in %r" %(actual[i], obj))
+
+                        else:
+                            diffs += child.continue_diff(obj, actual[i])
         return diffs
 
 
@@ -109,7 +128,7 @@ class DiffDicts(ImplementationBase):
         for key, obj in expected.iteritems():
             with self.diffing_child("[%r]" % key) as child:
                 if key not in actual:
-                    diffs += self.different("expected %r, got nothing" % obj)
+                    diffs += child.different("expected %r, got nothing" % obj)
                 else:
                     if 'assert_includes' in child.options:
                         if not any([not child.continue_diff(possible, actual[key]) for possible in obj]):

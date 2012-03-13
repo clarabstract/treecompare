@@ -188,11 +188,27 @@ failed to produce the expected differences:
                 'orchards'
             ]
         )
-    
     def test_assert_includes_option_with_ignore_key(self):
         self.assertNotDifferent(
             options = {
-                r'^\[1\]\["whatever"\]': ('assert_includes', 'ignore_key')
+                r'^\[1\]\[\'whatever\'\]': ('assert_includes', 'ignore_key')
+            },
+            expected = [
+                'ninjas',
+                'orchards',
+                ('apple', 'orange', 'watermelon'),
+            ],
+            actual = [
+                'ninjas',
+                'orange',
+                'orchards'
+            ]
+        )
+
+    def test_assert_includes_option_with_ignore_key_in_dict(self):
+        self.assertNotDifferent(
+            options = {
+                r'^\[1\]\[\'whatever\'\]': ('assert_includes', 'ignore_key')
             },
             expected = [
                 'ninjas',
@@ -201,7 +217,7 @@ failed to produce the expected differences:
             ],
             actual = [
                 'ninjas',
-                dict(whatever='orange'),
+                dict(whaja='orange'),
                 'orchards'
             ]
         )

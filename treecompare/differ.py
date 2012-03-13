@@ -15,8 +15,7 @@ class Differ(object):
         for impl_class in self.implementations:
             if impl_class.can_diff(actual):
                 return impl_class(self, options, path).get_diffs(expected, actual)
-        raise Exception("No diff implementation found for %r" %
-                actual)
+        raise Exception("No diff implementation found for %r" % (actual,))
         
             
         
