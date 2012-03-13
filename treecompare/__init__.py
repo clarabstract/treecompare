@@ -29,5 +29,7 @@ from . import implementations
 diff = Differ(
 		implementations.DiffPrimitives,
 		implementations.DiffNumbers,
-		implementations.DiffText
+		implementations.DiffText,
+                implementations.DiffLists,
+                implementations.DiffDicts
 	)
