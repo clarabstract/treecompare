@@ -75,6 +75,12 @@ class DiffNumbers(DiffPrimitives):
 
 class DiffText(DiffPrimitives):
     diffs_types = basestring
+    def diff(self, expected, actual):
+        expected_comparable, actual_comparable = expected, actual
+        if 'ignore_case' in self.options:
+            expected_comparable, actual_comparable = expected.lower(), actual.lower()
+        if expected_comparable != actual_comparable:
+            return self.different("expected %r, got %r" % (expected, actual))
     
 class DiffLists(ImplementationBase):
     diffs_types = list

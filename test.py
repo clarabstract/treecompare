@@ -190,7 +190,7 @@ failed to produce the expected differences:
     def test_assert_includes_option_with_ignore_case(self):
         self.assertNotDifferent(
             options = {
-                r'^\[1\]\["whatever"\]': ('assert_includes', 'ignore_case')
+                r'^\[1\]\[\'whatever\'\]': ('assert_includes', 'ignore_case')
             },
             expected = [
                 'ninjas',
