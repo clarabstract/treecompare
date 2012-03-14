@@ -324,6 +324,40 @@ failed to produce the expected differences:
                 'papaya': 'republic'
             }
         )
+
+    def test_ignore_spacing_option(self):
+        self.assertNotDifferent(
+            options = 'ignore_spacing',
+            expected = "Welcome, you are logged in as <bobo>.",
+            actual = """Welcome,
+you are logged  \tin as< bobo>
+    .
+                """
+        )
+
+    def test_ignore_line_whitespace_option(self):
+        self.assertNotDifferent(
+            options = 'ignore_spacing',
+            expected = """Welcome,
+                you are logged in as <bobo>.
+            """,
+            actual = """Welcome, \r
+\t\tyou are logged in as <bobo>.  
+            """
+        )
+    def test_ignore_line_whitespace_option_failure(self):
+            self.assertDifferent(
+                {
+                    ":": "fasf"
+                },
+                options = 'ignore_spacing',
+                expected = """Welcome,
+                    you are logged in as <bobo>.
+                """,
+                actual = """Welcome, \r
+    \t\tyou are logged   in as <bobo>.  
+                """
+            )
     
         
 if __name__ == '__main__':

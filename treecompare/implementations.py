@@ -106,10 +106,24 @@ class DiffText(DiffPrimitives):
             return self.different("expected %r, got %r" % (expected, actual))
         expected_comparable, actual_comparable = expected, actual
         if 'ignore_case' in self.options:
-            expected_comparable, actual_comparable = expected.lower(), actual.lower()
+            expected_comparable, actual_comparable = expected_comparable.lower(), actual_comparable.lower()
+        if 'ignore_spacing' in self.options:
+            expected_comparable, actual_comparable = self.normalize_spacing(expected_comparable), self.normalize_spacing(actual_comparable)
+        elif 'ignore_line_whitespace' in self.options:
+            expected_comparable, actual_comparable = self.normalize_line_spacing(expected_comparable), self.normalize_line_spacing(actual_comparable)
         if expected_comparable != actual_comparable:
             return self.different("expected %r, got %r" % (expected, actual))
     
+    def normalize_spacing(self, text):
+        normalized = re.sub(r'([^\w])', ' \\1 ', text)
+        normalized = re.sub(r'[\s\n\r]+', ' ', normalized)
+        return normalized
+
+    def normalize_line_spacing(self, text):
+        normalized = re.sub(r'\r', '', text)
+        normalized = re.sub(r'\w*\n\w*', '\n', normalized)
+        return normalized
+
 
 class ChildDiffingMixing(object):
     def path_and_child(self, diffable):
