@@ -139,6 +139,7 @@ failed to produce the expected differences:
             actual=  ['oranges', 'starfruit', [1,2,3],  'apples'],
         )
         
+    def test_ignore_key_option_with_difference(self):
         self.assertDifferent(
             {
               '[2][1]': "expected 2, got 3",
@@ -150,8 +151,60 @@ failed to produce the expected differences:
             expected=['apples', 'oranges', 'starfruit', [1,2,3]],
             actual=  ['oranges', 'starfruit', [1,3,2],  'apples'],
         )
+    def test_ignore_key_option_with_deep_difference(self):
+        self.assertDifferent(
+            {
+              "[2][2]['a']": "expected 1, got 2",
+              "[3]": "expected ('a','b','c'), got 'farkles'",
+              "4": "expected 'apples', got nothing"
+            },
+            options = {
+                r'^\[\d+\]$' : 'ignore_key'
+            },
+            expected=['apples', 'oranges', 'starfruit', [1,2,dict(a=1)], "farkle"],
+            actual=  ['oranges', 'starfruit', [1,2,dict(a=2)],  ('a','b','c'), 'apples'],
+        )
+
+    def test_partial_ignore_key_rule(self):
+
+        self.assertDifferent(
+            {
+              "[0]": "expected 'apples', got 'pineapple'",
+              "[3]": "expected 'pineapple', got 'apples'"
+              
+            },
+            options = {
+                r'^\[[1-2]\]$' : 'ignore_key'
+            },
+            expected=['apples', 'oranges', 'starfruit', 'pineapple'],
+            actual=  ['pineapple', 'starfruit', 'oranges', 'apples'],
+        )
+
+
+    def test_ignore_key_option_with_unexpected_values(self):
+        self.assertDifferent(
+            {
+              '[2]': "unexpected value: 'maples'",
+            },
+            options = {
+                r'^\[\d+\]$' : 'ignore_key'
+            },
+            expected=['apples', 'oranges', 'starfruit'],
+            actual=  ['oranges', 'starfruit', 'maples', 'apples'],
+        )
         
-    
+    def test_ignore_option_with_missing_value(self):
+        self.assertDifferent(
+            {
+              '[2]': "expected 'poppler', got nothing",
+            },
+            options = {
+                r'^\[\d+\]$' : 'ignore_key'
+            },
+            expected=['apples', 'oranges', 'poppler', 'starfruit'],
+            actual=  ['oranges', 'starfruit', 'apples'],
+        )
+
     def test_assert_includes_option(self):
         self.assertNotDifferent(
             options = {

@@ -21,7 +21,7 @@ class ImplementationBase(object):
         if isinstance(self.differ_options, dict):
             options = ()
             for pattern, opts in self.differ_options.iteritems():
-                if re.match(pattern, self.path):
+                if re.match(pattern, self.path_string):
                     options += opts if isinstance(opts, tuple) else (opts,)
         return options
     
@@ -35,9 +35,25 @@ class ImplementationBase(object):
     def diff(self, expected, actual):
         raise NotImplementedError
     
-    def get_diffs(self, *args, **kw):
-        """Just like diff(), except always returns a list"""
-        return self.diff(*args, **kw) or []
+    def get_diffs(self, expected, actual):
+        """
+        Calls out to self.diff(), performaing some global processing:
+            - always return a list (handle None-return)
+            - check for 'ignore' option
+            - handle 'assert_includes' option
+        """
+        print self.path_string, self.options, expected, actual
+        if 'ignore' in self.options:
+            return []
+        if 'assert_includes' in self.options:
+            if any([self.path_context("|%r"%i).matches(option, actual) for i, option in enumerate(expected)]):
+                # At least one match, no diff!
+                return []
+            else:
+                return self.different("%r not included in %r" % (actual,expected))
+
+        return self.diff(expected, actual) or []
+
     
     def different(self, message_or_path, message=None):
         """
@@ -53,14 +69,24 @@ class ImplementationBase(object):
         return [Difference(path, message)]
 
     def diff_child(self, new_path, expected, actual):
-        return self.differ.diff(expected, actual, self.differ_options, self.path + new_path)
+        return self.differ.diff(expected, actual, self.differ_options, self.path + [new_path])
 
     def continue_diff(self, expected, actual):
         return self.differ.diff(expected, actual, self.differ_options, self.path)
 
+    def matches(self, expected, actual):
+        return not self.continue_diff(expected, actual)
+
+    def path_context(self, new_path):
+        return self.__class__(self.differ, self.differ_options, self.path+[new_path])
+
     @contextmanager
     def diffing_child(self, new_path):
-        yield self.__class__(self.differ, self.differ_options, self.path+new_path)
+        yield self.path_context(new_path)
+
+    @property
+    def path_string(self):
+        return ''.join(self.path)
     
 class DiffPrimitives(ImplementationBase):
     diffs_types = (type(None), bool)
@@ -84,60 +110,109 @@ class DiffText(DiffPrimitives):
         if expected_comparable != actual_comparable:
             return self.different("expected %r, got %r" % (expected, actual))
     
-class DiffLists(ImplementationBase):
-    diffs_types = (list, tuple)
+
+class ChildDiffingMixing(object):
+    def path_and_child(self, diffable):
+        """For each child item, yield the the child path and child object"""
+        raise NotImplementedError
+
+    
+    def split_keyed_unkeyed(self, children):
+        """
+        Turn given children into two lists:
+            - the first is the original child list, with nodes for
+              whom ignore_key applies replaced with True
+            - the second is the list of all nodes for whom ignore_key
+              applies
+        (i.e. the first list has all items from the second list 
+        replaced with True)
+        """
+        unkeyed = []
+        def get_keyd(path_and_child):
+            path, child = path_and_child
+            with self.diffing_child(path) as node:
+                if 'ignore_key' in node.options:
+                    unkeyed.append((path, child))
+                    return path, True
+                else:
+                    return path, child
+
+
+        return map(get_keyd, children), unkeyed
+    
+    def filtered_path_and_child(self, diffable):
+        for path, child in self.path_and_child(diffable):
+            with self.diffing_child(path) as node:
+                if 'ignore' not in node.options:
+                    yield path, child
 
     def diff(self, expected, actual):
         diffs = []
         if not isinstance(actual, type(expected)):
             return self.different("expected %r, got %r" % (expected, actual))
-        for i, obj in enumerate(expected):
-            with self.diffing_child("[%s]" % i) as child:
-                if 'ignore_key' in child.options:
-                    for possible in actual:
-                        new_diffs = child.continue_diff(obj, possible)
-                        if not new_diffs:
-                            break
-                    else:
-                        diffs += child.different("%r not found anywhere in in %r" % (obj, actual))
-                        
+        expected_children = self.filtered_path_and_child(expected)
+        actual_children = self.filtered_path_and_child(actual)
 
+        keyed_expected, unkeyed_expected = self.split_keyed_unkeyed(expected_children)
+        keyed_actual, unkeyed_actual = self.split_keyed_unkeyed(actual_children)
 
-                    #if not any([not  ]):
-                    #    diffs += child.different("%r not found anywhere in in %r" % (obj, actual))
-                    # if not any([not child.continue_diff(possible, actual[i]) for possible in actual]):
-                    #     diffs += child.different("%r not found anywhere in in %r" % (obj, actual))
+        # First check keyed elements in lockstep, based on actual:
+        # (unkeyed elements are all 'True', so they'll never be different)
+
+        expected_lookup = dict(keyed_expected)
+        for path, actual_object in keyed_actual:
+            with self.diffing_child(path) as child:
+                if path in expected_lookup:
+                    diffs += child.continue_diff(expected_lookup[path], actual_object)
                 else:
-                    if len(actual) < (i+1):
-                        diffs += child.different("expected %r, got nothing" % obj)
-                    else:
-                        if 'assert_includes' in child.options:
-                            if not any([not child.continue_diff(possible, actual[i]) for possible in obj]):
-                                diffs += child.different("%r not included in %r" %(actual[i], obj))
+                    diffs += child.different("unexpected value: %r" % actual_object)
 
-                        else:
-                            diffs += child.continue_diff(obj, actual[i])
+        # Now check unekeyed elements using broad search...
+        # Attempt to match each actual to each expected, keeping track
+        # of unmatched elements
+        unmatched_expected = dict(unkeyed_expected)
+        def no_match(enumerator):
+            path, actual_child = path_and_child
+            with self.diffing_child(path) as node:
+                for path, expected_child in unmatched_expected:
+                    if node.matches(expected_child, actual_child):
+                        del unmatched_expected[path]
+                        return False
+                return True
+        unmatched_actual = filter(no_match, actual_children)
+        
+        # Now for each unmatched element we try to get the 'deepest'
+        # difference and report that (presumably it's the more useful
+        # one)
+        for path, ua in unmatched_actual:
+            with self.diffing_child(path) as node:
+                diffs_to_all = [node.continue_diff(ue, ua) for ue in unmatched_expected]
+                diffs += max(diffs_to_all, key= lambda d: len(d.path))
+
+        # And finally, add all missing expectations:
+        for path in set(dict(expected_children).keys()) - set(dict(actual_children).keys()):
+            with self.diffing_child(path) as node:
+                expected_object = dict(expected_children)[path]
+                diffs += node.different("expected %r, got nothing" % expected_object)
+            
+
+
         return diffs
 
 
 
-class DiffDicts(ImplementationBase):
+
+class DiffLists(ChildDiffingMixing, ImplementationBase):
+    diffs_types = (list, tuple)
+
+    def path_and_child(self, diffable):
+        for i, child in enumerate(diffable):
+            yield "[%r]" % i, child
+
+
+class DiffDicts(ChildDiffingMixing, ImplementationBase):
     diffs_types = dict
-    def diff(self, expected, actual):
-        diffs = []
-        for key, obj in expected.iteritems():
-            with self.diffing_child("[%r]" % key) as child:
-                if key not in actual:
-                    diffs += child.different("expected %r, got nothing" % obj)
-                else:
-                    if 'assert_includes' in child.options:
-                        if not any([not child.continue_diff(possible, actual[key]) for possible in obj]):
-                            diffs += child.different("%r not included in %r" %(actual[key], obj))
 
-                    else:
-                        diffs += child.continue_diff(obj, actual[key])
-        return diffs
-
-
-
-
+    def path_and_child(self, diffable):
+        for key, child in diffable.iteritems():
+            yield "[%r]" % key, child

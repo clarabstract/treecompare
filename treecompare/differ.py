@@ -7,7 +7,7 @@ class Differ(object):
     def __call__(self, *args, **kw):
         return self.diff(*args, **kw)
     
-    def diff(self, expected, actual, options={}, path=""):
+    def diff(self, expected, actual, options={}, path=[]):
         if not options and actual == expected:
             return []
         if hasattr(actual, '__diff_implementation__'):
