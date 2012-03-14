@@ -5,7 +5,7 @@ ignore                  Don't bother matching objects at path.
                                 global
 
 assert_includes         Instead of regular equality matching, verify that 
-                        object at path matches list/tuple/etc at corresponding
+                        object at path matches typle at corresponding
                         path of expected object
                                 global
 

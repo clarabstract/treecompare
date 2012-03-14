@@ -22,7 +22,7 @@ should be considered equal, but the the following differences were reported:
     def assertDifferent(self, expected_diffs, expected, actual, options={}):
         diffs = diff(expected, actual, options)
         #Let's get meta!
-        diff_diffs = diff([Difference(path, message) for path, message in expected_diffs.iteritems()], diffs)
+        diff_diffs = diff([Difference(path, message) for path, message in expected_diffs.iteritems()], diffs, options={r'^\[\d+\]$':'ignore_key'})
         if diff_diffs:
             message = """Expected object
 %s
@@ -138,6 +138,12 @@ failed to produce the expected differences:
             expected=['apples', 'oranges', 'starfruit', [1,2,3]],
             actual=  ['oranges', 'starfruit', [1,2,3],  'apples'],
         )
+    def test_ignore_key_option_with_dict(self):
+        self.assertNotDifferent(
+            options = 'ignore_key',
+            expected=dict(a=1, b=2,c=3),
+            actual=  dict(c=1, b=2,a=3)
+        )
         
     def test_ignore_key_option_with_difference(self):
         self.assertDifferent(
@@ -186,9 +192,7 @@ failed to produce the expected differences:
             {
               '[2]': "unexpected value: 'maples'",
             },
-            options = {
-                r'^\[\d+\]$' : 'ignore_key'
-            },
+            options ='ignore_key',
             expected=['apples', 'oranges', 'starfruit'],
             actual=  ['oranges', 'starfruit', 'maples', 'apples'],
         )
@@ -243,9 +247,7 @@ failed to produce the expected differences:
         )
     def test_assert_includes_option_with_ignore_key(self):
         self.assertNotDifferent(
-            options = {
-                r'^\[1\]\[\'whatever\'\]': ('assert_includes', 'ignore_key')
-            },
+            options = ('assert_includes', 'ignore_key'),
             expected = [
                 'ninjas',
                 'orchards',
@@ -261,7 +263,7 @@ failed to produce the expected differences:
     def test_assert_includes_option_with_ignore_key_in_dict(self):
         self.assertNotDifferent(
             options = {
-                r'^\[1\]\[\'whatever\'\]': ('assert_includes', 'ignore_key')
+                r'^\[1\]': ('assert_includes', 'ignore_key')
             },
             expected = [
                 'ninjas',
@@ -295,13 +297,13 @@ failed to produce the expected differences:
     def test_ignore_option(self):
         self.assertNotDifferent(
             options = {
-                r'\[papaya\]': 'ignore'
+                r'\[\'papaya\'\]': 'ignore'
             },
             expected = {
                 'banana': 'republic',
             },
             actual = {
-                'bana': 'republic',
+                'banana': 'republic',
                 'papaya': 'republic'
             }
         )
@@ -311,14 +313,14 @@ failed to produce the expected differences:
               '[pineapple]': "expected something, got nothing"
             },
             options = {
-                r'\[(pineapple|papaya)\]': 'ignore'
+                r'\[\'(pineapple|papaya)\'\]': 'ignore'
             },
             expected = {
                 'banana': 'republic',
                 'pineapple': 'commonwealth',
             },
             actual = {
-                'bana': 'republic',
+                'banana': 'republic',
                 'papaya': 'republic'
             }
         )

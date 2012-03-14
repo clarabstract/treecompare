@@ -42,11 +42,11 @@ class ImplementationBase(object):
             - check for 'ignore' option
             - handle 'assert_includes' option
         """
-        print self.path_string, self.options, expected, actual
+        #print self.path_string, self.options, expected, actual
         if 'ignore' in self.options:
             return []
-        if 'assert_includes' in self.options:
-            if any([self.path_context("|%r"%i).matches(option, actual) for i, option in enumerate(expected)]):
+        if 'assert_includes' in self.options and isinstance(expected, tuple):
+            if any([self.matches(option, actual) for i, option in enumerate(expected)]):
                 # At least one match, no diff!
                 return []
             else:
@@ -133,12 +133,12 @@ class ChildDiffingMixing(object):
             with self.diffing_child(path) as node:
                 if 'ignore_key' in node.options:
                     unkeyed.append((path, child))
-                    return path, True
+                    return False
                 else:
                     return path, child
 
 
-        return map(get_keyd, children), unkeyed
+        return filter(None, map(get_keyd, children)), unkeyed
     
     def filtered_path_and_child(self, diffable):
         for path, child in self.path_and_child(diffable):
