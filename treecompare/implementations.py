@@ -100,6 +100,7 @@ class DiffNumbers(DiffPrimitives):
     
 
 class DiffText(DiffPrimitives):
+    NDIFF_THRESHOLD = 32
     diffs_types = basestring
     def diff(self, expected, actual):
         if not isinstance(expected, basestring):
@@ -112,7 +113,16 @@ class DiffText(DiffPrimitives):
         elif 'ignore_line_whitespace' in self.options:
             expected_comparable, actual_comparable = self.normalize_line_spacing(expected_comparable), self.normalize_line_spacing(actual_comparable)
         if expected_comparable != actual_comparable:
-            return self.different("expected %r, got %r" % (expected, actual))
+            try:
+                import difflib
+            except ImportError:
+                difflib = False
+            else:
+                if difflib and len(expected) + len(actual) > self.NDIFF_THRESHOLD:
+                    diffs = difflib.ndiff(expected_comparable.splitlines(True)+[], actual_comparable.splitlines(True)+[],)
+                    return self.different("expected %r, got %r - diff:\n%s" % (expected, actual, '\n'.join(diffs)))
+                else:
+                    return self.different("expected %r, got %r" % (expected, actual))
     
     def normalize_spacing(self, text):
         normalized = re.sub(r'([^\w])', ' \\1 ', text)
@@ -201,8 +211,10 @@ class ChildDiffingMixing(object):
         for path, ua in unmatched_actual:
             with self.diffing_child(path) as node:
                 if unmatched_expected:
-                    diffs_to_all = sum([node.continue_diff(ue, ua) for ue in unmatched_expected.values()],[])
-                    diffs.append(max(diffs_to_all, key= lambda d: len(d.path)))
+                    diffs_to_all = [(p, node.continue_diff(ue, ua)) for p, ue in unmatched_expected.iteritems()]
+                    bdf, best_diff = max(diffs_to_all, key= lambda diffs: sum([len(d.path) for d in diffs[1]]))
+                    del unmatched_expected[bdf]
+                    diffs += best_diff
                 else:
                     diffs += node.different("unexpected value: %r" % ua)
 
