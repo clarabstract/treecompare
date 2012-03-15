@@ -161,15 +161,15 @@ class ChildDiffingMixing(object):
                     yield path, child
 
     def diff(self, expected, actual):
+
         diffs = []
         if not isinstance(actual, type(expected)):
             return self.different("expected %r, got %r" % (expected, actual))
-        expected_children = self.filtered_path_and_child(expected)
-        actual_children = self.filtered_path_and_child(actual)
+        expected_children = list(self.filtered_path_and_child(expected))
+        actual_children = list(self.filtered_path_and_child(actual))
 
         keyed_expected, unkeyed_expected = self.split_keyed_unkeyed(expected_children)
         keyed_actual, unkeyed_actual = self.split_keyed_unkeyed(actual_children)
-
         # First check keyed elements in lockstep, based on actual:
         # (unkeyed elements are all 'True', so they'll never be different)
 
@@ -185,31 +185,33 @@ class ChildDiffingMixing(object):
         # Attempt to match each actual to each expected, keeping track
         # of unmatched elements
         unmatched_expected = dict(unkeyed_expected)
-        def no_match(enumerator):
+        def no_match(path_and_child):
             path, actual_child = path_and_child
             with self.diffing_child(path) as node:
-                for path, expected_child in unmatched_expected:
+                for path, expected_child in unmatched_expected.iteritems():
                     if node.matches(expected_child, actual_child):
                         del unmatched_expected[path]
                         return False
                 return True
-        unmatched_actual = filter(no_match, actual_children)
-        
+        unmatched_actual = filter(no_match, unkeyed_actual)
+         
         # Now for each unmatched element we try to get the 'deepest'
         # difference and report that (presumably it's the more useful
         # one)
         for path, ua in unmatched_actual:
             with self.diffing_child(path) as node:
-                diffs_to_all = [node.continue_diff(ue, ua) for ue in unmatched_expected]
-                diffs += max(diffs_to_all, key= lambda d: len(d.path))
+                if unmatched_expected:
+                    diffs_to_all = sum([node.continue_diff(ue, ua) for ue in unmatched_expected.values()],[])
+                    diffs.append(max(diffs_to_all, key= lambda d: len(d.path)))
+                else:
+                    diffs += node.different("unexpected value: %r" % ua)
 
         # And finally, add all missing expectations:
-        for path in set(dict(expected_children).keys()) - set(dict(actual_children).keys()):
+        for path in set(unmatched_expected.keys() + dict(keyed_expected).keys()) - set(dict(unmatched_actual + keyed_actual).keys()):
             with self.diffing_child(path) as node:
                 expected_object = dict(expected_children)[path]
-                diffs += node.different("expected %r, got nothing" % expected_object)
+                diffs += node.different("expected %r, got nothing" % (expected_object,))
             
-
 
         return diffs
 

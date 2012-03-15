@@ -20,11 +20,11 @@ class Difference(object):
 
     
     def __diff_implementation__(self):
-    	from .implementations import ImplementationBase
-    	class DiffImplementation(ImplementationBase):
-	    	def diff(self, expected, actual):
-	    		return 	self.diff_child(".path", expected.path_string, actual.path_string) + \
-	    				self.diff_child(".message", expected.message, actual.message)
+    	from .implementations import ImplementationBase, ChildDiffingMixing
+    	class DiffImplementation(ChildDiffingMixing, ImplementationBase):
+    	    def path_and_child(self, diffable):
+    	        yield ".path", diffable.path_string
+    	        yield ".message", diffable.message
     	return DiffImplementation
 
     @property

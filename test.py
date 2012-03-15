@@ -56,6 +56,7 @@ failed to produce the expected differences:
             dict(a=1, b=[dict(x=10, z=11)])
         )
 
+
     def test_unequal_trees_longer_expected(self):
         self.assertDifferent({
                 '["b"][0]["z"]': "expected 12, got nothing"
@@ -144,7 +145,17 @@ failed to produce the expected differences:
             expected=dict(a=1, b=2,c=3),
             actual=  dict(c=1, b=2,a=3)
         )
-        
+    
+    def test_ignore_key_option_with_dict_difference(self):
+        self.assertDifferent({
+                "['a']": "expected 1, got 6",
+                "['b']": "expected 1, got 5",
+                "['c']": "expected 1, got 4",
+            },
+            options = 'ignore_key',
+            expected=dict(a=1, b=2,c=3),
+            actual=  dict(c=4, b=5,a=6)
+        )
     def test_ignore_key_option_with_difference(self):
         self.assertDifferent(
             {
@@ -335,7 +346,7 @@ you are logged  \tin as< bobo>
                 """
         )
 
-    def test_ignore_line_whitespace_option(self):
+    def test_ignore_line_spacing_option(self):
         self.assertNotDifferent(
             options = 'ignore_spacing',
             expected = """Welcome,
@@ -345,16 +356,16 @@ you are logged  \tin as< bobo>
 \t\tyou are logged in as <bobo>.  
             """
         )
-    def test_ignore_line_whitespace_option_failure(self):
+    def test_ignore_line_spacing_option_failure(self):
             self.assertDifferent(
                 {
-                    ":": "fasf"
+                    "as": "fasf"
                 },
                 options = 'ignore_spacing',
                 expected = """Welcome,
                     you are logged in as <bobo>.
                 """,
-                actual = """Welcome, \r
+                actual = """Welczme, \r
     \t\tyou are logged   in as <bobo>.  
                 """
             )
