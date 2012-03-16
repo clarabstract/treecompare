@@ -18,7 +18,7 @@ class Difference(object):
 
     
 
-    
+    @property
     def __diff_implementation__(self):
     	from .implementations import ImplementationBase, ChildDiffingMixing
     	class DiffImplementation(ChildDiffingMixing, ImplementationBase):

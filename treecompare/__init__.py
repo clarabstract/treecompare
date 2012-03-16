@@ -21,13 +21,6 @@ ignore_line_whitespace  When comparing strings, normalize line endings and ignor
 
 """
 
-from .differ import Differ
-from . import implementations
+from .differ import make_differ
 
-diff = Differ(
-		implementations.DiffPrimitives,
-		implementations.DiffNumbers,
-		implementations.DiffText,
-                implementations.DiffLists,
-                implementations.DiffDicts
-	)
+diff = make_differ() # Your basic differ
