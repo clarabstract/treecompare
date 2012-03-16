@@ -13,13 +13,12 @@ class DiffXMLDocument(ChildDiffingMixing, ImplementationBase):
 		yield "?xml@version", doc.version
 		yield "?xml@encoding", doc.encoding
 		yield "?xml@standalone", doc.standalone
-		i = 0
-		for child in doc.childNodes:
+
+		for i, child in enumerate(doc.childNodes):
 			if hasattr(child, 'tagName'):
 				yield "/%d<%s>" % (i, child.tagName), child
 			else:
 				yield "/%d:text" % i, child.data
-			i += 1
 
 
 class DiffXMLElement(ChildDiffingMixing, ImplementationBase):
@@ -28,13 +27,12 @@ class DiffXMLElement(ChildDiffingMixing, ImplementationBase):
 		yield ":tag", el.tagName
 		for name, value in el.attributes.items():
 			yield "@%s" % name, value
-		i = 0
-		for child in el.childNodes:
+
+		for i, child in enumerate(el.childNodes):
 			if hasattr(child, 'tagName'):
 				yield "/%d<%s>" % (i, child.tagName), child
 			else:
 				yield "/%d:text" % i, child.data
-			i += 1
 				
 
 
