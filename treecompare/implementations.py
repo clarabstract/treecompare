@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, with_statement
 
 from contextlib import contextmanager
 import re
@@ -21,7 +21,7 @@ class ImplementationBase(object):
         if isinstance(self.differ_options, dict):
             options = ()
             for pattern, opts in self.differ_options.iteritems():
-                if re.match(pattern, self.path_string):
+                if re.search(pattern, self.path_string):
                     options += opts if isinstance(opts, tuple) else (opts,)
         return options
     
@@ -130,8 +130,12 @@ class DiffText(DiffPrimitives):
         return normalized
 
     def normalize_line_spacing(self, text):
+        # Remove CRs
         normalized = re.sub(r'\r', '', text)
-        normalized = re.sub(r'\w*\n\w*', '\n', normalized)
+        # Remove leading/trailing whitespace
+        normalized = re.sub(r'\s*\n\s*', '\n', normalized)
+        # Remove leading/trailing newlines
+        normalized = re.sub(r'^\n|\n$', '', normalized)
         return normalized
 
 
@@ -171,7 +175,6 @@ class ChildDiffingMixing(object):
                     yield path, child
 
     def diff(self, expected, actual):
-
         diffs = []
         if not isinstance(actual, type(expected)):
             return self.different("expected %r, got %r" % (expected, actual))
@@ -182,6 +185,7 @@ class ChildDiffingMixing(object):
         keyed_actual, unkeyed_actual = self.split_keyed_unkeyed(actual_children)
         # First check keyed elements in lockstep, based on actual:
         # (unkeyed elements are all 'True', so they'll never be different)
+
 
         expected_lookup = dict(keyed_expected)
         for path, actual_object in keyed_actual:
