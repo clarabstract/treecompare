@@ -22,6 +22,19 @@ Major features:
 	- whitespace normalization for text nodes
 
 
+Installation
+===============
+
+Available from the usual places::
+
+	sudo pip install treecompare
+
+Or just use setuptools for developing::
+
+	git clone <fork>
+	cd treecompare
+	python setup.py develop
+
 Usage
 ===============
 
@@ -187,7 +200,7 @@ A ``diff`` function contains a number a list of implementation classes that perf
 
 	2. ``self.diff(expected, actual)`` - the acutal implementation, must return a list of ``Difference`` objects. 
 
-For the vast majority of diff implementations one only really needs to recursively diff certain object attributes, and append something to the current "path" for each attribute. The ``ChildDiffingMixing`` allows you to do this very easily - you need only impelment a method that ``yield``s each ``(path,child)`` pair. Everything else including options handling is handled for you. 
+For the vast majority of diff implementations one only really needs to recursively diff certain object attributes, and append something to the current "path" for each attribute. The ``ChildDiffingMixing`` allows you to do this very easily - you need only impelment a method that ``yields`` each ``(path,child)`` pair. Everything else including options handling is handled for you. 
 
 The XML differ implementation illustrates how easy this is::
 
