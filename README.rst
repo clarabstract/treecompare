@@ -216,3 +216,10 @@ Finally, you have to register your implementation to a differ function. A factor
 	custom_diff = make_differ(MyCustomDiff, SomeOtherImplementation)
 
 Note that ``can_diff`` is called for each implemenation in order. Only the first match is used. If you want your custom implementation to override a builtin, you may manipulate the ``custom_diff.implementations`` list directly.
+
+Credits
+===============
+
+Developed for Demonware / Activision Blizzard Inc.
+Released under the BSD License
+
