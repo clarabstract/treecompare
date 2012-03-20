@@ -1,0 +1,12 @@
+from bdPackageBuilder import *
+
+for var in rpmVariables:
+    AddOption(var[0], help=var[1], default=var[2])
+
+rpmBuilder = Builder(action = rpmBuildAction)
+env = Environment(BUILDERS = {'buildRpm': rpmBuilder})
+
+if env.GetOption('clean'):
+    cleanRpms()
+else:
+    env.buildRpm('dummy', 'Rpm.spec')

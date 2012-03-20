@@ -1,2 +1,6 @@
 *.pyc
 *.egg-info/
+_build/
+dist/
+rpm/.scons*
+rpm/mock-results/*
