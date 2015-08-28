@@ -99,7 +99,7 @@ Basic usage::
 	>>> 
 
 ``['glossary']['GlossDiv']['GlossList']['GlossEntry']['GlossDef']['para']`` is the "path" of the difference,
-it shows exactly how one can navigate the objects to get to the differing parts. As the difference is inside a reasonably large block of text, the difference is highlifhted even further using text-diffs.
+it shows exactly how one can navigate the objects to get to the differing parts. As the difference is inside a reasonably large block of text, the difference is highlighted even further using text-diffs.
 
 
 Matching options
@@ -192,9 +192,9 @@ The numbers before each element in the path refers to the node's index in the pa
 Extending
 ===============
 
-A ``diff`` function contains a number a list of implementation classes that perform the actual work. The default ``diff`` contains implementations for the major python builtins. ``diff_xml`` adds additional implementations for XML nodes. 
+A ``diff`` function is composed of a number of implementation classes that perform the actual work. The default ``diff`` contains implementations for the major python builtins. ``diff_xml`` adds additional implementations for XML nodes. 
 
-``ImplementationBase`` is, not surprisingly, the base class for Implementations.  Your subclass must be able to answer to:
+``ImplementationBase`` is, unsurprisingly, the base class for implementations.  Your subclass must be able to answer to:
 
 	1. ``cls.can_diff(obj)`` - are you able to diff this object? Note: a default implementation is provided that simply does an instanceof check on ``cls.diffs_types`` - setting that class attribute should suffice in most cases.
 
